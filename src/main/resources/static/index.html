@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Management System</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Animations -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+
+    <style>
+        * {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            color: white;
+        }
+
+        .container {
+            width: 90%;
+            margin: auto;
+            padding-top: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+        }
+
+        /* Glass effect */
+        .card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(12px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.4);
+        }
+
+        input {
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .row input {
+            flex: 1;
+        }
+
+        button {
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-main {
+            background: linear-gradient(to right, #ff512f, #dd2476);
+            color: white;
+        }
+
+        .btn-main:hover {
+            transform: scale(1.05);
+        }
+
+        .btn-light {
+            background: white;
+            color: black;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            overflow: hidden;
+            border-radius: 10px;
+        }
+
+        th {
+            background: #111;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: center;
+        }
+
+        tr {
+            background: rgba(255,255,255,0.1);
+        }
+
+        tr:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .btn-edit {
+            background: orange;
+        }
+
+        .btn-delete {
+            background: red;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1 class="animate__animated animate__fadeInDown">🎓 Student Management System</h1>
+
+    <div class="card animate__animated animate__zoomIn">
+
+        <!-- FORM -->
+        <div class="row">
+            <input type="text" id="name" placeholder="👤 Name">
+            <input type="email" id="email" placeholder="📧 Email">
+            <input type="text" id="course" placeholder="📚 Course">
+            <input type="number" id="marks" placeholder="📊 Marks">
+        </div>
+
+        <br>
+
+        <button class="btn-main" onclick="addStudent()">Save Student</button>
+        <button class="btn-light" onclick="loadStudents()">Show Students</button>
+
+        <!-- TABLE -->
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Course</th>
+                    <th>Marks</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+
+    </div>
+
+</div>
+
+<script>
+const API = "http://localhost:8080/students";
+let editingId = null;
+
+function addStudent() {
+    const name = document.getElementById("name").value;
+    const email = document.getElementById("email").value;
+    const course = document.getElementById("course").value;
+    const marks = document.getElementById("marks").value;
+
+    if (!name || !email || !course || !marks) {
+        alert("Fill all fields");
+        return;
+    }
+
+    const data = { name, email, course, marks };
+
+    if (editingId) {
+        fetch(API + "/" + editingId, {
+            method: "PUT",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(data)
+        }).then(() => {
+            editingId = null;
+            loadStudents();
+        });
+    } else {
+        fetch(API, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(data)
+        }).then(() => loadStudents());
+    }
+
+    document.getElementById("name").value = "";
+    document.getElementById("email").value = "";
+    document.getElementById("course").value = "";
+    document.getElementById("marks").value = "";
+}
+
+function loadStudents() {
+    fetch(API)
+    .then(res => res.json())
+    .then(data => {
+        const table = document.getElementById("tableBody");
+        table.innerHTML = "";
+
+        data.forEach(s => {
+            table.innerHTML += `
+                <tr class="animate__animated animate__fadeInUp">
+                    <td>${s.id}</td>
+                    <td>${s.name}</td>
+                    <td>${s.email}</td>
+                    <td>${s.course}</td>
+                    <td>${s.marks}</td>
+                    <td>
+                        <button class="btn-edit" onclick="editStudent(${s.id}, '${s.name}', '${s.email}', '${s.course}', ${s.marks})">✏</button>
+                        <button class="btn-delete" onclick="deleteStudent(${s.id})">🗑</button>
+                    </td>
+                </tr>
+            `;
+        });
+    });
+}
+
+function editStudent(id, name, email, course, marks) {
+    document.getElementById("name").value = name;
+    document.getElementById("email").value = email;
+    document.getElementById("course").value = course;
+    document.getElementById("marks").value = marks;
+    editingId = id;
+}
+
+function deleteStudent(id) {
+    fetch(API + "/" + id, {method: "DELETE"})
+    .then(() => loadStudents());
+}
+</script>
+
+</body>
+</html>
